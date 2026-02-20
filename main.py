@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import base64
 
@@ -8,6 +9,17 @@ from schemas import Pereval
 app = FastAPI(title="FSTR Pereval API")
 
 db = PerevalDB()
+
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={
+            "status": 400,
+            "message": "Bad Request: missing or invalid fields",
+            "id": None,
+        },
+    )
 
 @app.post("/submitData")
 def submit_data(pereval: Pereval):
