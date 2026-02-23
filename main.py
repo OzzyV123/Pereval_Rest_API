@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import base64
@@ -78,3 +78,15 @@ def submit_data(pereval: Pereval):
                 "id": None,
             },
         )
+
+@app.get("/submitData/{pereval_id}")
+def get_submit_data(pereval_id: int):
+    pereval = db.get_pereval_by_id(pereval_id)
+
+    if not pereval:
+        raise HTTPException(
+            status_code=404,
+            detail="Перевал с таким id не найден"
+        )
+
+    return pereval

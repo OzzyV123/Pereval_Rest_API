@@ -1,4 +1,5 @@
 import os
+import base64
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -102,3 +103,56 @@ class PerevalDB:
                 """,
                 (pereval_id, image_data, title)
             )
+
+    def get_pereval_by_id(self, pereval_id: int):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    p.id,
+                    p.beauty_title,
+                    p.title,
+                    p.other_titles,
+                    p.connect,
+                    p.add_time,
+                    p.status,
+
+                    u.email,
+                    u.fam,
+                    u.name,
+                    u.otc,
+                    u.phone,
+
+                    c.latitude,
+                    c.longitude,
+                    c.height,
+
+                    p.level_winter,
+                    p.level_summer,
+                    p.level_autumn,
+                    p.level_spring
+                FROM pereval_added p
+                JOIN users u ON p.user_id = u.id
+                JOIN coords c ON p.coord_id = c.id
+                WHERE p.id = %s
+            """, (pereval_id,))
+
+            row = cur.fetchone()
+            if not row:
+                return None
+
+            pereval = dict(row)
+
+            cur.execute("""
+                SELECT id, title, image_data
+                FROM pereval_images
+                WHERE pereval_id = %s
+            """, (pereval_id,))
+
+            images = []
+            for img in cur.fetchall():
+                img_dict = dict(img)
+                img_dict["image_data"] = base64.b64encode(img_dict["image_data"]).decode("utf-8")
+                images.append(img_dict)
+
+            pereval["images"] = images
+            return pereval
