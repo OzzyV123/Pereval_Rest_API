@@ -173,3 +173,67 @@ class PerevalDB:
 
             rows = cur.fetchall()
             return [dict(row) for row in rows]
+
+    def get_pereval_status(self, pereval_id: int):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "SELECT status FROM pereval_added WHERE id = %s",
+                (pereval_id,)
+            )
+            row = cur.fetchone()
+            return row["status"] if row else None
+
+    def update_pereval(self, pereval_id: int, pereval):
+        with self.conn.cursor() as cur:
+            # coords
+            cur.execute("""
+                UPDATE coords
+                SET latitude=%s, longitude=%s, height=%s
+                WHERE id = (
+                    SELECT coord_id FROM pereval_added WHERE id = %s
+                )
+            """, (
+                pereval.coords.latitude,
+                pereval.coords.longitude,
+                pereval.coords.height,
+                pereval_id
+            ))
+
+            # pereval
+            cur.execute("""
+                UPDATE pereval_added
+                SET
+                    beauty_title=%s,
+                    title=%s,
+                    other_titles=%s,
+                    connect=%s,
+                    level_winter=%s,
+                    level_summer=%s,
+                    level_autumn=%s,
+                    level_spring=%s
+                WHERE id = %s
+            """, (
+                pereval.beauty_title,
+                pereval.title,
+                pereval.other_titles,
+                pereval.connect,
+                pereval.level.winter,
+                pereval.level.summer,
+                pereval.level.autumn,
+                pereval.level.spring,
+                pereval_id
+            ))
+
+    def replace_images(self, pereval_id: int, images):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM pereval_images WHERE pereval_id = %s",
+                (pereval_id,)
+            )
+
+            for img in images:
+                image_bytes = base64.b64decode(img.data)
+                cur.execute("""
+                    INSERT INTO pereval_images (pereval_id, image_data, title)
+                    VALUES (%s, %s, %s)
+                """, (pereval_id, image_bytes, img.title))
