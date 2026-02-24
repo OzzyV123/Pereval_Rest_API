@@ -156,3 +156,20 @@ class PerevalDB:
 
             pereval["images"] = images
             return pereval
+
+    def get_perevals_by_user_email(self, email: str):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    p.id,
+                    p.title,
+                    p.add_time,
+                    p.status
+                FROM pereval_added p
+                JOIN users u ON p.user_id = u.id
+                WHERE u.email = %s
+                ORDER BY p.add_time
+            """, (email,))
+
+            rows = cur.fetchall()
+            return [dict(row) for row in rows]

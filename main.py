@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from typing import Optional
 import base64
 
 from db import PerevalDB
@@ -90,3 +91,10 @@ def get_submit_data(pereval_id: int):
         )
 
     return pereval
+
+@app.get("/submitData/")
+def get_submit_data_by_user(user__email: Optional[str] = Query(None)):
+    if not user__email:
+        return []
+
+    return db.get_perevals_by_user_email(user__email)
