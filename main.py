@@ -98,3 +98,34 @@ def get_submit_data_by_user(user__email: Optional[str] = Query(None)):
         return []
 
     return db.get_perevals_by_user_email(user__email)
+
+@app.patch("/submitData/{pereval_id}")
+def patch_submit_data(pereval_id: int, pereval: Pereval):
+    status = db.get_pereval_status(pereval_id)
+
+    if status is None:
+        return {
+            "state": 0,
+            "message": "Перевал не найден"
+        }
+
+    if status != "new":
+        return {
+            "state": 0,
+            "message": "Редактирование запрещено: статус не new"
+        }
+
+    try:
+        db.update_pereval(pereval_id, pereval)
+        db.replace_images(pereval_id, pereval.images)
+
+        return {
+            "state": 1,
+            "message": "ok"
+        }
+
+    except Exception as e:
+        return {
+            "state": 0,
+            "message": str(e)
+        }
