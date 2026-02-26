@@ -22,7 +22,22 @@ def validation_exception_handler(request: Request, exc: RequestValidationError):
         },
     )
 
-@app.post("/submitData")
+@app.post("/submitData",
+          summary="Добавить новый перевал",
+          description="Принимает данные о перевале, пользователе, координатах и изображениях.",
+          responses={
+              200: {
+                  "description": "Успешно",
+                  "content": {
+                      "application/json": {
+                          "example": {"status": 200, "message": None, "id": 42}
+                      }
+                  }
+              },
+              400: {"description": "Неверные данные"},
+              500: {"description": "Ошибка сервера"},
+          },
+          )
 def submit_data(pereval: Pereval):
     try:
         # пользователь
@@ -80,7 +95,56 @@ def submit_data(pereval: Pereval):
             },
         )
 
-@app.get("/submitData/{pereval_id}")
+@app.get("/submitData/{pereval_id}",
+         summary="Получить информацию о перевале",
+         description="Выводит данные о перевале с данным id.",
+         responses={
+             200: {
+                 "description": "Перевал найден",
+                 "content": {
+                     "application/json": {
+                         "example": {
+                             "id": 7,
+                             "beauty_title": "пер.",
+                             "title": "Пхия",
+                             "other_titles": "Триев",
+                             "connect": "",
+                             "add_time": "2021-09-22 13:18:13",
+                             "status": "new",
+                             "email": "user@mail.ru",
+                             "fam": "Пупкин",
+                             "name": "Василий",
+                             "otc": "Иванович",
+                             "phone": "+7 555 55 55",
+                             "latitude": 45.3842,
+                             "longitude": 7.1525,
+                             "height": 1200,
+                             "level_winter": "",
+                             "level_summer": "1А",
+                             "level_autumn": "1А",
+                             "level_spring": "",
+                             "images": [
+                                 {
+                                     "id": 1,
+                                     "title": "Седловина",
+                                     "image_data": "<base64>"
+                                 }
+                             ]
+                         }
+                     }
+                 }
+             },
+             404: {
+                 "description": "Перевал не найден",
+                 "content": {
+                     "application/json": {
+                         "example": {"detail": "Перевал с таким id не найден"}
+                     }
+                 }
+             },
+             500: {"description": "Ошибка сервера"},
+         },
+         )
 def get_submit_data(pereval_id: int):
     pereval = db.get_pereval_by_id(pereval_id)
 
@@ -92,14 +156,80 @@ def get_submit_data(pereval_id: int):
 
     return pereval
 
-@app.get("/submitData/")
+@app.get("/submitData/",
+         summary="Получить информацию о перевалах пользователя",
+         description="Выводит данные о всех перевала пользователя с данной почтой.",
+         responses={
+             200: {
+                 "description": "Список перевалов",
+                 "content": {
+                     "application/json": {
+                         "example": [
+                             {
+                                 "id": 3,
+                                 "title": "Пхия",
+                                 "add_time": "2021-09-22 13:18:13",
+                                 "status": "accepted"
+                             },
+                             {
+                                 "id": 7,
+                                 "title": "Тестовый перевал",
+                                 "add_time": "2023-10-01 12:00:00",
+                                 "status": "new"
+                             }
+                         ]
+                     }
+                 }
+             },
+             500: {"description": "Ошибка сервера"},
+         },
+         )
 def get_submit_data_by_user(user__email: Optional[str] = Query(None)):
     if not user__email:
         return []
 
     return db.get_perevals_by_user_email(user__email)
 
-@app.patch("/submitData/{pereval_id}")
+@app.patch("/submitData/{pereval_id}",
+           summary="Изменить существующий перевал",
+           description="Позволяет изменить данные о перевале (кроме данных пользователя). Нельзя изменить если статус перевала не new.",
+           responses={
+               200: {
+                   "description": "Успешно обновлено",
+                   "content": {
+                       "application/json": {
+                           "example": {
+                               "state": 1,
+                               "message": "Запись успешно обновлена"
+                           }
+                       }
+                   }
+               },
+               400: {
+                   "description": "Редактирование запрещено",
+                   "content": {
+                       "application/json": {
+                           "example": {
+                               "state": 0,
+                               "message": "Редактирование запрещено: статус не 'new'"
+                           }
+                       }
+                   }
+               },
+               404: {
+                   "description": "Перевал не найден",
+                   "content": {
+                       "application/json": {
+                           "example": {
+                               "state": 0,
+                               "message": "Перевал не найден"
+                           }
+                       }
+                   }
+               },
+               500: {"description": "Ошибка сервера"},
+           },
+           )
 def patch_submit_data(pereval_id: int, pereval: Pereval):
     status = db.get_pereval_status(pereval_id)
 
